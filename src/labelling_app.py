@@ -1,8 +1,14 @@
 import cv2
 import numpy as np
-import Tuple
+from typing import Tuple, NamedTuple
 import csv
 import os
+
+
+class Transform(NamedTuple):
+    flip: bool
+    rot: float
+    scale: float
 
 
 
@@ -10,17 +16,18 @@ class LabellingApp:
     def __init__(self):
         pass
 
-    def process_key(key: int):
+    def process_key(self, key: int):
+        print(f"Key pressed: {key}")
         match key:
-            case 2490368:  # Up arrow
-                return "up"
-            case 2621440:  # Down arrow
-                return "down"
-            case 2424832:  # Left arrow
-                return "left"
-            case 2555904:  # Right arrow
-                return "right"
-            case ord('f'):
+            case 119:  # Up arrow
+                return "w"
+            case 97:  # Down arrow
+                return "a"
+            case 115:  # Left arrow
+                return "s"
+            case 100:  # Right arrow
+                return "d"
+            case 102:
                 return "f"
             case 13:  # Enter key
                 return "enter"
@@ -45,11 +52,7 @@ class LabellingApp:
             raise ValueError(f"Could not load image from {image_path}")
 
         # Initialize transform state
-        transform = (flip=False, rot=0.0, scale=1.0)
-
-        # Get image center for rotation
-        height, width = original_image.shape[:2]
-        center = (width // 2, height // 2)
+        transform = Transform(flip=False, rot=0.0, scale=1.0)
 
         while True:
             transformed_image = self.apply_transform(original_image, transform)
@@ -60,24 +63,25 @@ class LabellingApp:
                 continue
 
             action = self.process_key(key)
-            if action == "up":
-                transform = (transform.flip, transform.rot, transform.scale + 0.05)
-            elif action == "down":
-                transform = (transform.flip, transform.rot, max(transform.scale - 0.05, 0.1))
-            elif action == "left":
-                transform = (transform.flip, transform.rot + np.radians(1), transform.scale)
-            elif action == "right":
-                transform = (transform.flip, transform.rot - np.radians(1), transform.scale)
+            print(f"Key pressed: {action}")
+            if action == "w":
+                transform = transform._replace(scale=transform.scale + 0.05)
+            elif action == "a":
+                transform = transform._replace(rot=transform.rot + np.radians(1))
+            elif action == "s":
+                transform = transform._replace(scale=max(transform.scale - 0.05, 0.1))
+            elif action == "d":
+                transform = transform._replace(rot=transform.rot - np.radians(1))
             elif action == "f":
-                transform = (not transform.flip, transform.rot, transform.scale)
+                transform = transform._replace(flip=not transform.flip)
             elif action == "enter":
                 print(f"Transform latched: {transform}")
                 return transform, transformed_image
             elif action == "esc":
                 print("Exiting without saving transform.")
-                return None
+                return None, None # two nones for typing consistency
             
-    def apply_transform(img, transform_state):
+    def apply_transform(self, img, transform_state):
         """Apply the current transform to the image"""
         result = img.copy()
         height = img.shape[0]
@@ -118,11 +122,11 @@ class LabellingApp:
  
 # Example usage
 if __name__ == "__main__":
-    label_output_path = os.path.join(os.path.dirname(__file__), "datasets", "labels.csv")
-    images_dir = os.path.join(os.path.dirname(__file__), "image_bank", "stripped")  # Directory to save output images
-    transformed_dir = os.path.join(os.path.dirname(__file__), "image_bank", "transformed")  # Directory to save transformed images
+    label_output_path = os.path.join(os.path.dirname(__file__), "../datasets", "labels.csv")
+    images_dir = os.path.join(os.path.dirname(__file__), "../image_bank", "stripped")  # Directory to save output images
+    transformed_dir = os.path.join(os.path.dirname(__file__), "../image_bank", "transformed")  # Directory to save transformed images
 
-    labeller = LabellingApp(images_dir)
+    labeller = LabellingApp()
     pregenerated_filenames = [f for f in os.listdir(images_dir) if os.path.isfile(os.path.join(images_dir, f))]
 
     if not os.path.exists(label_output_path):
@@ -137,6 +141,8 @@ if __name__ == "__main__":
             reader = csv.reader(csvfile)
             header = next(reader, None)  # Skip header row
             for row in reader:
+                if row is None or len(row) < 1:
+                    continue
                 filename = row[0]
                 if filename in pregenerated_filenames:
                     pregenerated_filenames.remove(filename)
@@ -146,8 +152,11 @@ if __name__ == "__main__":
     for filename in pregenerated_filenames:
         image_path = os.path.join(images_dir, filename)
         transform, transformed_image = labeller.interactive_image_labeller(image_path)
+        if transform is None or transformed_image is None:
+            print(f"Quitting labelling for {filename}.")
+            break
         cv2.imwrite(image_path, transformed_image)
         print(f"Transform {transform} for {filename}")
-        with open(label_output_path, 'a') as f:
+        with open(label_output_path, 'a', newline='') as f:
             writer = csv.writer(f)
             writer.writerow([filename, transform.flip, transform.rot, transform.scale])
