@@ -47,10 +47,10 @@ class LabellingApp:
         - Enter: Save current transform and exit
         - ESC: Exit without saving
         """
-        original_image = cv2.imread(image_path)
+        original_image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED) # Must be IMREAD_UNCHANGED to preserve alpha channel
         if original_image is None:
             raise ValueError(f"Could not load image from {image_path}")
-
+    
         # Initialize transform state
         transform = Transform(flip=False, rot=0.0, scale=1.0)
 
@@ -123,7 +123,7 @@ class LabellingApp:
 # Example usage
 if __name__ == "__main__":
     label_output_path = os.path.join(os.path.dirname(__file__), "../datasets", "labels.csv")
-    images_dir = os.path.join(os.path.dirname(__file__), "../image_bank", "stripped")  # Directory to save output images
+    images_dir = os.path.join(os.path.dirname(__file__), "../image_bank", "stripped")  # Directory of input images
     transformed_dir = os.path.join(os.path.dirname(__file__), "../image_bank", "transformed")  # Directory to save transformed images
 
     labeller = LabellingApp()
@@ -155,7 +155,9 @@ if __name__ == "__main__":
         if transform is None or transformed_image is None:
             print(f"Quitting labelling for {filename}.")
             break
-        cv2.imwrite(image_path, transformed_image)
+        output_name = filename.replace('stripped', 'transformed')
+        output_path = os.path.join(transformed_dir, output_name)
+        cv2.imwrite(output_path, transformed_image)
         print(f"Transform {transform} for {filename}")
         with open(label_output_path, 'a', newline='') as f:
             writer = csv.writer(f)

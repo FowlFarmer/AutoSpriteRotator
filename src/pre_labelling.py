@@ -53,7 +53,7 @@ def generate_dataset():
         output_image = bg_remover.pil_to_cv2(pil_image)
 
         # Save the processed image
-        output_name = os.path.join(stripped_dir, f"stripped_{filenames[i]}.png")
+        output_name = os.path.join(stripped_dir, f"stripped_{filenames[i]}") # already has .png
         cv2.imwrite(output_name, output_image)
         print(f"Processed image saved as: {output_name}")
 
