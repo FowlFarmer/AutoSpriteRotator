@@ -46,11 +46,19 @@ def generate_dataset():
             print(f"Error: Could not load image from {image_path}")
             continue
 
+        # I can't be bothered to add checks for already stripped images
+        # since this model is so fast
+
         # Remove background
         pil_image = bg_remover.remove_background(image)
 
         # Convert back to OpenCV format
         output_image = bg_remover.pil_to_cv2(pil_image)
+
+        # Set all pixels with alpha 0 to black for a clean tensor
+        # mask = output_image[:, :, 3] == 0  # Get mask of pixels with alpha 0
+        # then Set those pixels to black (BGR)
+        output_image = output_image[output_image[:, :, 3] == 0, :3]  
 
         # Save the processed image
         output_name = os.path.join(stripped_dir, f"stripped_{filenames[i]}") # already has .png

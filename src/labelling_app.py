@@ -17,7 +17,6 @@ class LabellingApp:
         pass
 
     def process_key(self, key: int):
-        print(f"Key pressed: {key}")
         match key:
             case 119:  # Up arrow
                 return "w"
@@ -63,7 +62,6 @@ class LabellingApp:
                 continue
 
             action = self.process_key(key)
-            print(f"Key pressed: {action}")
             if action == "w":
                 transform = transform._replace(scale=transform.scale + 0.05)
             elif action == "a":
@@ -148,6 +146,11 @@ if __name__ == "__main__":
                     pregenerated_filenames.remove(filename)
                     print(f"Image {filename} already labelled, removing from pregenerated list.")
 
+    if not os.path.exists(transformed_dir):
+        print(f"Transformed images output directory {transformed_dir} does not exist, creating it.")
+        os.makedirs(transformed_dir, exist_ok=True)
+
+    print(f"Use WASD to rotate and scale images, F to flip, Enter to save, ESC to exit.")
     print(f"Beginning labelling. {len(pregenerated_filenames)} images to label. (Good luck! >w<)")
     for filename in pregenerated_filenames:
         image_path = os.path.join(images_dir, filename)
