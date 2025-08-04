@@ -1,0 +1,17 @@
+# Core PyTorch (CUDA 12.1 compatible) !!! MUST BE INSTALLED MANUALLY VIA:
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+# torch==2.3.0+cu121
+# torchvision==0.18.0+cu121
+# torchaudio==2.3.0+cu121
+# Hugging Face Diffusers + dependencies
+diffusers
+transformers
+accelerate #(auto installs CUDAless torch - be careful)
+
+# Other essentials
+pillow
+kornia
+numpy==1.26.4
+opencv-python==4.11.0.86
+timm
