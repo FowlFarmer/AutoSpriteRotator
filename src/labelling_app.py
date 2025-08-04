@@ -129,11 +129,11 @@ if __name__ == "__main__":
     labeller = LabellingApp()
     pregenerated_filenames = [f for f in os.listdir(images_dir) if os.path.isfile(os.path.join(images_dir, f))]
 
-    if not os.path.exists(label_output_path):
-        print(f"Label output file {label_output_path} does not exist, creating new file.")
+    if not os.path.exists(label_output_path) or os.path.getsize(label_output_path) == 0:
+        print(f"Label output file {label_output_path} does not exist or is empty, creating new file.")
         with open(label_output_path, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow(['filename', 'flip', 'rot (rad)', 'scale'])
+            writer.writerow(['filename', 'flip', 'rotation_radians', 'scale'])
 
     else: # Only check for pre-existing labels if the label file exists (duh)
         print("Checking for images in directory already labelled...")

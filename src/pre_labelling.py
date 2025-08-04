@@ -1,14 +1,10 @@
 import csv
 import numpy as np
 import os
-import sys
 import cv2
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from backend.models.remove_background import BackgroundRemover
-from backend.models.image_generation import ImageGenerator
-
+from image_generation import ImageGenerator
+from remove_background import BackgroundRemover
 
 input_dataset = os.path.join(os.path.dirname(__file__), "../datasets", "stage_1_1_dataset.csv")
 output_dir = os.path.join(os.path.dirname(__file__), "../image_bank", "gen")  # Directory to save output images
