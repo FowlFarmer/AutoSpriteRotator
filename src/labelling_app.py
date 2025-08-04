@@ -32,6 +32,8 @@ class LabellingApp:
                 return "enter"
             case 27:  # ESC key
                 return "esc"
+            case 8:  # Backspace key
+                return "backspace"
             case _:
                 return None
 
@@ -74,10 +76,13 @@ class LabellingApp:
                 transform = transform._replace(flip=not transform.flip)
             elif action == "enter":
                 print(f"Transform latched: {transform}")
-                return transform, transformed_image
+                return transform, transformed_image, True
             elif action == "esc":
                 print("Exiting without saving transform.")
-                return None, None # two nones for typing consistency
+                return None, None, False # two nones for typing consistency
+            elif action == "backspace":
+                print("Backspace pressed, skipping.")
+                return None, None, False  # Skip this image
             
     def apply_transform(self, img, transform_state):
         """Apply the current transform to the image"""
@@ -154,10 +159,14 @@ if __name__ == "__main__":
     print(f"Beginning labelling. {len(pregenerated_filenames)} images to label. (Good luck! >w<)")
     for filename in pregenerated_filenames:
         image_path = os.path.join(images_dir, filename)
-        transform, transformed_image = labeller.interactive_image_labeller(image_path)
+        transform, transformed_image, keep = labeller.interactive_image_labeller(image_path)
+        if not keep:
+            print(f"Skipping {filename}.")
+            continue
         if transform is None or transformed_image is None:
             print(f"Quitting labelling for {filename}.")
             break
+
         output_name = filename.replace('stripped', 'transformed')
         output_path = os.path.join(transformed_dir, output_name)
         cv2.imwrite(output_path, transformed_image)

@@ -56,9 +56,9 @@ def generate_dataset():
         output_image = bg_remover.pil_to_cv2(pil_image)
 
         # Set all pixels with alpha 0 to black for a clean tensor
-        # mask = output_image[:, :, 3] == 0  # Get mask of pixels with alpha 0
-        # then Set those pixels to black (BGR)
-        output_image = output_image[output_image[:, :, 3] == 0, :3]  
+        mask = output_image[:, :, 3] == 0  # Get mask of pixels with alpha 0
+        # Set those pixels to black (BGR)
+        output_image[mask, :3] = [0, 0, 0]  # Set RGB channels to black where alpha is 0
 
         # Save the processed image
         output_name = os.path.join(stripped_dir, f"stripped_{filenames[i]}") # already has .png
