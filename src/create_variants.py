@@ -68,7 +68,7 @@ class VariantCreator:
         angle = random.uniform(-180, 180)  # degrees
         added_rot = np.radians(angle)
         # Keep rotation within -pi to pi
-        new_rot += added_rot
+        new_rot -= added_rot # if I variate the rotation, I must subtract the added rotation (opposite)
         if new_rot > np.pi:
             new_rot -= 2 * np.pi
         elif new_rot < -np.pi:
@@ -76,7 +76,7 @@ class VariantCreator:
 
         # Randomly scale
         added_scale = np.random.uniform(0.7, 1)
-        new_scale *= added_scale
+        new_scale /= added_scale # same thing, i need to negatively compensate
 
         randomized_image = self.labeller.apply_transform(randomized_image, Transform(flip=added_flip, rot=added_rot, scale=added_scale))
 
@@ -90,8 +90,9 @@ class VariantCreator:
         randomized_image[:, :, 0] = np.clip(randomized_image[:, :, 0] * adjust_b, 0, 255).astype(randomized_image.dtype)
         randomized_image[:, :, 1] = np.clip(randomized_image[:, :, 1] * adjust_g, 0, 255).astype(randomized_image.dtype)
         randomized_image[:, :, 2] = np.clip(randomized_image[:, :, 2] * adjust_r, 0, 255).astype(randomized_image.dtype)
+        print(f"variating flip: {added_flip}, rotation: {added_rot}, scale: {added_scale} color: B{adjust_b} G{adjust_g} R{adjust_r}")
         return randomized_image, Transform(flip=new_flip, rot=new_rot, scale=new_scale)
-    
+
 if __name__ == "__main__":
     labelled_csv = os.path.join(os.path.dirname(__file__), "../datasets/labels.csv")
     input_dir = os.path.join(os.path.dirname(__file__), "../image_bank/stripped/")
@@ -99,4 +100,28 @@ if __name__ == "__main__":
     new_csv_path = "../datasets/variants_labels.csv"
 
     creator = VariantCreator()
-    creator.create_variants(labelled_csv, input_dir, output_dir, new_csv_path)
+
+    if input("Test variant creation? (y/n): ").strip().lower() == 'y':
+        # Test first: create a variant and make sure the new transform is correct
+        with open(labelled_csv, 'r', newline='') as csvfile:
+            reader = csv.reader(csvfile)
+            header = next(reader, None)  # Skip header row
+            test_row = next(reader)  # Get the first row for testing
+            test_filename = test_row[0]
+            print(f"test filename: {test_filename}")
+            test_transform = Transform(flip=bool(test_row[1]), rot=float(test_row[2]), scale=float(test_row[3]))
+            print(f"test transform: {test_transform}")
+            test_image_path = os.path.join(input_dir, test_filename)
+
+            variant_image, variant_transform = creator.randomize_transform_and_color(cv2.imread(test_image_path, cv2.IMREAD_UNCHANGED), test_transform)
+            # Then apply the new transform and see if it gets us to the labelled correct rotation
+            corrected_image = creator.labeller.apply_transform(variant_image, variant_transform)
+            print(f"{corrected_image.shape=}, {variant_transform=}")
+            cv2.imwrite(os.path.join(os.path.dirname(__file__), "../image_bank/test", f"test_variant_{test_filename}"), corrected_image)
+
+            original_image = cv2.imread(test_image_path, cv2.IMREAD_UNCHANGED)
+            nonvariant = creator.labeller.apply_transform(original_image, test_transform)
+            cv2.imwrite(os.path.join(os.path.dirname(__file__), "../image_bank/test", f"nonvariant.png"), nonvariant)
+            cv2.imshow("Variant Image", corrected_image)
+    else:
+        creator.create_variants(labelled_csv, input_dir, output_dir, new_csv_path)

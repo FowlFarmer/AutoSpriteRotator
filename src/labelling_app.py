@@ -173,4 +173,8 @@ if __name__ == "__main__":
         print(f"Transform {transform} for {filename}")
         with open(label_output_path, 'a', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow([filename, transform.flip, transform.rot, transform.scale])
+            if transform.flip:
+                flip = "1"
+            else:
+                flip = "0"
+            writer.writerow([filename, flip, transform.rot, transform.scale])
