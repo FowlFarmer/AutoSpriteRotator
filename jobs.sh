@@ -3,7 +3,7 @@
 
 # quick setup for imaginecraft model build venv
 
-# Function to build virtual environment with dummy commands
+# Slurm/watcloud suited venv
 build_venv() {
     export HF_HOME=/tmp/huggingface # Huggingface model cache to prevent quota issues
 
