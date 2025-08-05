@@ -2,10 +2,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class FlipFirstTransformNet(nn.Module):
+class AutoSpriteTransformModel(nn.Module):
     def __init__(self):
         super().__init__()
-        
+
+        # Normalization parameters for 4-channel input (RGBA)
+        self.mean = torch.tensor([0.5, 0.5, 0.5, 0.5]).view(1, 4, 1, 1)
+        self.std = torch.tensor([0.5, 0.5, 0.5, 0.5]).view(1, 4, 1, 1)
+
         # Feature extractor (e.g., from 1024x1024 image)
         self.backbone = nn.Sequential(
             nn.Conv2d(4, 16, 3, stride=1, padding=1),
@@ -57,6 +61,11 @@ class FlipFirstTransformNet(nn.Module):
 
 
     def forward(self, x):
+        if x.device != self.mean.device:
+            self.mean = self.mean.to(x.device)
+            self.std = self.std.to(x.device)
+
+        x = (x - self.mean) / self.std
         x = self.backbone(x)            # [B, 128, 4, 4]
         x = self.flatten(x)             # [B, 2048]
         shared_feat = self.fc_shared(x) # [B, 256]
