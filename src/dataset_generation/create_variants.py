@@ -37,8 +37,11 @@ class VariantCreator:
 
                 # Create variants
                 for i in range(20):  # Create 20 variants
-                    variant_image, variant_transform = self.randomize_transform_and_color(image, transform_state)
                     variant_filename = filename.replace('stripped_', '').replace('.png', f'_v{i}.png')
+                    if os.path.exists(os.path.join(output_dir, variant_filename)):
+                        print(f"Variant {variant_filename} already exists, skipping.")
+                        continue
+                    variant_image, variant_transform = self.randomize_transform_and_color(image, transform_state)
                     cv2.imwrite(os.path.join(output_dir, variant_filename), variant_image)
                     
                     # Save the new labels
