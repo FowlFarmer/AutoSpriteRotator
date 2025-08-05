@@ -94,12 +94,6 @@ class LabellingApp:
         # Apply flip
         if transform_state.flip:
             result = cv2.flip(result, 1)  # horizontal flip
-        
-        # Apply rotation
-        if transform_state.rot != 0:
-            rotation_matrix = cv2.getRotationMatrix2D(center, np.degrees(transform_state.rot), 1.0)
-            result = cv2.warpAffine(result, rotation_matrix, (width, height))
-        
         # Apply scale
         if transform_state.scale != 1.0:
             new_width = int(width * transform_state.scale)
@@ -119,6 +113,12 @@ class LabellingApp:
                 crop_x = (new_width - width) // 2
                 crop_y = (new_height - height) // 2
                 result = result[crop_y:crop_y+height, crop_x:crop_x+width]
+        
+        # Apply rotation
+        if transform_state.rot != 0:
+            rotation_matrix = cv2.getRotationMatrix2D(center, np.degrees(transform_state.rot), 1.0)
+            result = cv2.warpAffine(result, rotation_matrix, (width, height))
+        
         
         return result
 
