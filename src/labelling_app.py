@@ -85,44 +85,108 @@ class LabellingApp:
                 return None, None, False  # Skip this image
             
     def apply_transform(self, img, transform_state):
-        """Apply the current transform to the image"""
-        result = img.copy()
-        height = img.shape[0]
-        width = img.shape[1]
-        center = (width // 2, height // 2)
+        """Apply the current transform to the image on a padded canvas, then crop/resize back."""
+        original_h, original_w = img.shape[:2]
+
+        # Create a double-size canvas (with transparency if needed)
+        canvas_h = original_h * 3
+        canvas_w = original_w * 3
+        canvas = np.zeros((canvas_h, canvas_w, 4), dtype=np.uint8)
+
+        # Compute top-left coordinates to center the image in the canvas
+        offset_y = (canvas_h - original_h) // 2
+        offset_x = (canvas_w - original_w) // 2
+
+        # Place original image at center
+        canvas[offset_y:offset_y+original_h, offset_x:offset_x+original_w] = img
+        result = canvas
+
+        center = (canvas_w // 2, canvas_h // 2)
 
         # Apply flip
         if transform_state.flip:
             result = cv2.flip(result, 1)  # horizontal flip
-        # Apply scale
+
+        # Apply scaling
         if transform_state.scale != 1.0:
-            new_width = int(width * transform_state.scale)
-            new_height = int(height * transform_state.scale)
-            result = cv2.resize(result, (new_width, new_height))
-            
-            # Center the scaled image
-            if transform_state.scale < 1.0:
-                # If scaled down, pad with black
-                pad_x = (width - new_width) // 2
-                pad_y = (height - new_height) // 2
-                padded = np.zeros((height, width, 4), dtype=np.uint8)
-                padded[pad_y:pad_y+new_height, pad_x:pad_x+new_width] = result
+            scaled_w = int(canvas_w * transform_state.scale)
+            scaled_h = int(canvas_h * transform_state.scale)
+            result = cv2.resize(result, (scaled_w, scaled_h), interpolation=cv2.INTER_LINEAR)
+
+            # Crop or pad to canvas size again
+            if transform_state.scale > 1.0:
+                crop_x = (scaled_w - canvas_w) // 2
+                crop_y = (scaled_h - canvas_h) // 2
+                result = result[crop_y:crop_y+canvas_h, crop_x:crop_x+canvas_w]
+            else:
+                padded = np.zeros((canvas_h, canvas_w, 4), dtype=np.uint8)
+                pad_x = (canvas_w - scaled_w) // 2
+                pad_y = (canvas_h - scaled_h) // 2
+                padded[pad_y:pad_y+scaled_h, pad_x:pad_x+scaled_w] = result
                 result = padded
-            elif transform_state.scale > 1.0:
-                # If scaled up, crop from center
-                crop_x = (new_width - width) // 2
-                crop_y = (new_height - height) // 2
-                result = result[crop_y:crop_y+height, crop_x:crop_x+width]
-        
+
         # Apply rotation
         if transform_state.rot != 0:
             rotation_matrix = cv2.getRotationMatrix2D(center, np.degrees(transform_state.rot), 1.0)
-            result = cv2.warpAffine(result, rotation_matrix, (width, height))
-        
-        
-        return result
+            result = cv2.warpAffine(result, rotation_matrix, (canvas_w, canvas_h), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(0,0,0,0))
 
- 
+        # Final crop back to original size
+        final_crop = result[offset_y:offset_y+original_h, offset_x:offset_x+original_w]
+
+        return final_crop
+
+    def apply_transform_reverse_order(self, img, transform_state):
+        """Apply the current transform to the image on a padded canvas, then crop/resize back."""
+        original_h, original_w = img.shape[:2]
+
+        # Create a double-size canvas (with transparency if needed)
+        canvas_h = original_h * 3
+        canvas_w = original_w * 3
+        canvas = np.zeros((canvas_h, canvas_w, 4), dtype=np.uint8)
+
+        # Compute top-left coordinates to center the image in the canvas
+        offset_y = (canvas_h - original_h) // 2
+        offset_x = (canvas_w - original_w) // 2
+
+        # Place original image at center
+        canvas[offset_y:offset_y+original_h, offset_x:offset_x+original_w] = img
+        result = canvas
+
+        center = (canvas_w // 2, canvas_h // 2)
+
+        # Apply rotation
+        if transform_state.rot != 0:
+            rotation_matrix = cv2.getRotationMatrix2D(center, np.degrees(transform_state.rot), 1.0)
+            result = cv2.warpAffine(result, rotation_matrix, (canvas_w, canvas_h), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(0,0,0,0))
+
+        # Apply scaling
+        if transform_state.scale != 1.0:
+            scaled_w = int(canvas_w * transform_state.scale)
+            scaled_h = int(canvas_h * transform_state.scale)
+            result = cv2.resize(result, (scaled_w, scaled_h), interpolation=cv2.INTER_LINEAR)
+
+            # Crop or pad to canvas size again
+            if transform_state.scale > 1.0:
+                crop_x = (scaled_w - canvas_w) // 2
+                crop_y = (scaled_h - canvas_h) // 2
+                result = result[crop_y:crop_y+canvas_h, crop_x:crop_x+canvas_w]
+            else:
+                padded = np.zeros((canvas_h, canvas_w, 4), dtype=np.uint8)
+                pad_x = (canvas_w - scaled_w) // 2
+                pad_y = (canvas_h - scaled_h) // 2
+                padded[pad_y:pad_y+scaled_h, pad_x:pad_x+scaled_w] = result
+                result = padded
+
+        # Apply flip
+        if transform_state.flip:
+            result = cv2.flip(result, 1)  # horizontal flip
+
+        # Final crop back to original size
+        final_crop = result[offset_y:offset_y+original_h, offset_x:offset_x+original_w]
+
+        return final_crop
+
+
 # Example usage
 if __name__ == "__main__":
     label_output_path = os.path.join(os.path.dirname(__file__), "../datasets", "labels.csv")

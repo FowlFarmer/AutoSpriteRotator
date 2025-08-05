@@ -26,7 +26,7 @@ class VariantCreator:
             header = next(reader, None)  # Skip header row
             for row in reader:
                 filename = row[0]
-                transform_state = Transform(flip=bool(row[1]), rot=float(row[2]), scale=float(row[3]))
+                transform_state = Transform(flip=bool(int(row[1])), rot=float(row[2]), scale=float(row[3]))
 
                 # Load the original image
                 image_path = os.path.join(os.path.dirname(input_dir), filename)
@@ -71,14 +71,16 @@ class VariantCreator:
         new_rot -= added_rot # if I variate the rotation, I must subtract the added rotation (opposite)
         if new_rot > np.pi:
             new_rot -= 2 * np.pi
+            print(f"new_rot > pi, adjusting: {new_rot}")
         elif new_rot < -np.pi:
             new_rot += 2 * np.pi
+            print(f"new_rot < -pi, adjusting: {new_rot}")
 
         # Randomly scale
         added_scale = np.random.uniform(0.7, 1)
         new_scale /= added_scale # same thing, i need to negatively compensate
 
-        randomized_image = self.labeller.apply_transform(randomized_image, Transform(flip=added_flip, rot=added_rot, scale=added_scale))
+        randomized_image = self.labeller.apply_transform_reverse_order(randomized_image, Transform(flip=added_flip, rot=added_rot, scale=added_scale))
 
         # Randomly adjust color
         # don't affect alpha channel
@@ -109,7 +111,7 @@ if __name__ == "__main__":
             test_row = next(reader)  # Get the first row for testing
             test_filename = test_row[0]
             print(f"test filename: {test_filename}")
-            test_transform = Transform(flip=bool(test_row[1]), rot=float(test_row[2]), scale=float(test_row[3]))
+            test_transform = Transform(flip=bool(int(test_row[1])), rot=float(test_row[2]), scale=float(test_row[3]))
             print(f"test transform: {test_transform}")
             test_image_path = os.path.join(input_dir, test_filename)
 
@@ -117,9 +119,11 @@ if __name__ == "__main__":
             # Then apply the new transform and see if it gets us to the labelled correct rotation
             corrected_image = creator.labeller.apply_transform(variant_image, variant_transform)
             print(f"{corrected_image.shape=}, {variant_transform=}")
-            cv2.imwrite(os.path.join(os.path.dirname(__file__), "../image_bank/test", f"test_variant_{test_filename}"), corrected_image)
+            cv2.imwrite(os.path.join(os.path.dirname(__file__), "../image_bank/test", f"corrected.png"), corrected_image)
+            cv2.imwrite(os.path.join(os.path.dirname(__file__), "../image_bank/test", f"variant.png"), variant_image)
 
             original_image = cv2.imread(test_image_path, cv2.IMREAD_UNCHANGED)
+            
             nonvariant = creator.labeller.apply_transform(original_image, test_transform)
             cv2.imwrite(os.path.join(os.path.dirname(__file__), "../image_bank/test", f"nonvariant.png"), nonvariant)
             cv2.imshow("Variant Image", corrected_image)
