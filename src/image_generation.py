@@ -9,7 +9,7 @@ class ImageGenerator:
     def __init__(self):
         self.pipe = StableDiffusionXLPipeline.from_pretrained("segmind/SSD-1B", torch_dtype=torch.float16, use_safetensors=True, variant="fp16")
         self.pipe.to("cuda")
-        self.neg_prompt = "ugly, blurry, poor quality, complex background" # Negative prompt here
+        self.neg_prompt = "ugly, blurry, poor quality, complex background, multiple objects, concept art, two objects, three objects, person, human" # Negative prompt here
 
     def generate_image(self, prompt):
         image = self.pipe(prompt=prompt, negative_prompt=self.neg_prompt).images[0]

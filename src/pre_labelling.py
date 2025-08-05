@@ -6,7 +6,7 @@ import cv2
 from image_generation import ImageGenerator
 from remove_background import BackgroundRemover
 
-input_dataset = os.path.join(os.path.dirname(__file__), "../datasets", "stage_1_1_dataset.csv")
+input_dataset = os.path.join(os.path.dirname(__file__), "../datasets", "tools_2.csv")
 output_dir = os.path.join(os.path.dirname(__file__), "../image_bank", "gen")  # Directory to save output images
 stripped_dir = os.path.join(os.path.dirname(__file__), "../image_bank", "stripped")  # Directory to save stripped images
 
@@ -56,9 +56,9 @@ def generate_dataset():
         output_image = bg_remover.pil_to_cv2(pil_image)
 
         # Set all pixels with alpha 0 to black for a clean tensor
-        # mask = output_image[:, :, 3] == 0  # Get mask of pixels with alpha 0
+        mask = output_image[:, :, 3] == 0  # Get mask of pixels with alpha 0
         # then Set those pixels to black (BGR)
-        output_image = output_image[output_image[:, :, 3] == 0, :3]  
+        output_image[mask, :3] = 0
 
         # Save the processed image
         output_name = os.path.join(stripped_dir, f"stripped_{filenames[i]}") # already has .png
