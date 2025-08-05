@@ -79,7 +79,7 @@ class LabellingApp:
                 return transform, transformed_image, True
             elif action == "esc":
                 print("Exiting without saving transform.")
-                return None, None, False # two nones for typing consistency
+                return None, None, True # two nones for typing consistency
             elif action == "backspace":
                 print("Backspace pressed, skipping.")
                 return None, None, False  # Skip this image
