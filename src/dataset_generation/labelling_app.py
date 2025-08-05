@@ -189,9 +189,9 @@ class LabellingApp:
 
 # Example usage
 if __name__ == "__main__":
-    label_output_path = os.path.join(os.path.dirname(__file__), "../datasets", "labels.csv")
-    images_dir = os.path.join(os.path.dirname(__file__), "../image_bank", "stripped")  # Directory of input images
-    transformed_dir = os.path.join(os.path.dirname(__file__), "../image_bank", "transformed")  # Directory to save transformed images
+    label_output_path = os.path.join(os.path.dirname(__file__), "../../datasets", "labels.csv")
+    images_dir = os.path.join(os.path.dirname(__file__), "../../image_bank", "stripped")  # Directory of input images
+    transformed_dir = os.path.join(os.path.dirname(__file__), "../../image_bank", "transformed")  # Directory to save transformed images
 
     labeller = LabellingApp()
     pregenerated_filenames = [f for f in os.listdir(images_dir) if os.path.isfile(os.path.join(images_dir, f))]

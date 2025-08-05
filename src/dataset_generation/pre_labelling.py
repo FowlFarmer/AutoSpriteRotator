@@ -6,9 +6,9 @@ import cv2
 from image_generation import ImageGenerator
 from remove_background import BackgroundRemover
 
-input_dataset = os.path.join(os.path.dirname(__file__), "../datasets", "tools_2.csv")
-output_dir = os.path.join(os.path.dirname(__file__), "../image_bank", "gen")  # Directory to save output images
-stripped_dir = os.path.join(os.path.dirname(__file__), "../image_bank", "stripped")  # Directory to save stripped images
+input_dataset = os.path.join(os.path.dirname(__file__), "../../datasets", "tools_2.csv")
+output_dir = os.path.join(os.path.dirname(__file__), "../../image_bank", "gen")  # Directory to save output images
+stripped_dir = os.path.join(os.path.dirname(__file__), "../../image_bank", "stripped")  # Directory to save stripped images
 
 def generate_dataset():
     # Initialize models

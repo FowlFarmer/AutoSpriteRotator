@@ -13,7 +13,7 @@ class VariantCreator:
     def __init__(self):
         self.labeller = LabellingApp()
 
-    def create_variants(self, labelled_csv, input_dir="../image_bank/stripped/", output_dir="../image_bank/variants", new_csv_path="../datasets/variants_labels.csv"):
+    def create_variants(self, labelled_csv, input_dir="../../image_bank/stripped/", output_dir="../../image_bank/variants", new_csv_path="../../datasets/variants_labels.csv"):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
         if not os.path.exists(os.path.join(os.path.dirname(__file__), new_csv_path)):
@@ -99,10 +99,10 @@ class VariantCreator:
         return randomized_image, Transform(flip=new_flip, rot=new_rot, scale=new_scale)
 
 if __name__ == "__main__":
-    labelled_csv = os.path.join(os.path.dirname(__file__), "../datasets/labels.csv")
-    input_dir = os.path.join(os.path.dirname(__file__), "../image_bank/stripped/")
-    output_dir = os.path.join(os.path.dirname(__file__), "../image_bank/variants/")
-    new_csv_path = "../datasets/variants_labels.csv"
+    labelled_csv = os.path.join(os.path.dirname(__file__), "../../datasets/labels.csv")
+    input_dir = os.path.join(os.path.dirname(__file__), "../../image_bank/stripped/")
+    output_dir = os.path.join(os.path.dirname(__file__), "../../image_bank/variants/")
+    new_csv_path = "../../datasets/variants_labels.csv"
 
     creator = VariantCreator()
 

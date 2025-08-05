@@ -8,20 +8,33 @@ class FlipFirstTransformNet(nn.Module):
         
         # Feature extractor (e.g., from 1024x1024 image)
         self.backbone = nn.Sequential(
-            nn.Conv2d(4, 32, 5, stride=2, padding=2),  # 512x512
+            nn.Conv2d(4, 16, 3, stride=1, padding=1),
+            nn.BatchNorm2d(16),
             nn.ReLU(),
-            nn.MaxPool2d(2),                          # 256x256
-            nn.Conv2d(32, 64, 3, padding=1),
+
+            nn.Conv2d(16, 32, 3, stride=2, padding=1),
+            nn.BatchNorm2d(32),
             nn.ReLU(),
-            nn.MaxPool2d(2),                          # 128x128
-            nn.Conv2d(64, 128, 3, padding=1),
+
+            nn.Conv2d(32, 64, 3, stride=2, padding=1),
+            nn.BatchNorm2d(64),
             nn.ReLU(),
-            nn.AdaptiveAvgPool2d((1, 1))              # [B, 128, 1, 1]
+
+            nn.Conv2d(64, 64, 3, stride=2, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+
+            nn.Conv2d(64, 64, 3, stride=2, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+
+            nn.AdaptiveAvgPool2d((1, 1))
         )
+
         
-        self.flatten = nn.Flatten()
+        self.flatten = nn.Flatten()  # [B, 64, 1, 1] → [B, 64]
         self.fc_shared = nn.Sequential(
-            nn.Linear(128, 256),
+            nn.Linear(64, 256),
             nn.ReLU()
         )
 
@@ -41,6 +54,7 @@ class FlipFirstTransformNet(nn.Module):
             nn.ReLU(),
             nn.Linear(128, 1)
         )
+
 
     def forward(self, x):
         x = self.backbone(x)            # [B, 128, 4, 4]
