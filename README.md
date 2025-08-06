@@ -8,3 +8,5 @@ Datasets:
 items: unrefined, static prompting
 tools: tweaked
 tools_2: Used GPT agent mode.
+
+This model was built to serve a very niche purpose I had: I'm making a Minecraft mod in which you can basically just beg god for whatever items you want, and they'd arrive to your hand like magic. Basically, there's a complex backend system that would handle java script code and item logic functionality and then inject them into your game along with custom textures. However, image generation models 

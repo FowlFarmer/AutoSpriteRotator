@@ -1,18 +1,41 @@
 import torch
 from torch.utils.data import DataLoader
-from torch.optim import Adam
+from torch.optim import AdamW
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from tqdm import tqdm
 import os
 import sys
+import math
+import csv
+
 
 from dataset import TransformLabelDataset
-from arch import AutoSpriteTransformModel
-from losses import compute_flip_rot_scale_loss, compute_rot_scale_loss
+from arch_classic import AutoSpriteTransformModel
+from losses import compute_flip_rot_scale_loss, compute_rot_scale_loss, this_somehow_works, von_mises_nll, compute_basic_loss
+# from visualizer import LiveMetricPlotter
 
-def train(model, dataset, checkpoint_path, ckpt_name="model", load_ckpt_file=None, epochs=10, batch_size=16, lr=1e-4, device="cuda"):
+def train(model, dataset, checkpoint_path, ckpt_name="model", load_ckpt_file=None, epochs=10, batch_size=16, lr=1e-4, device="cuda", enable_csv_datalogging = False):
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
     model.to(device)
-    optimizer = Adam(model.parameters(), lr=lr)
+    optimizer = AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
+    scheduler = ReduceLROnPlateau(
+    optimizer,
+    mode='max',
+    factor=0.5,
+    patience=3,
+    threshold=1e-4,
+    threshold_mode='rel',
+    verbose=True
+    )
+    # Initialize live plotter
+    # plotter = LiveMetricPlotter(tracked_keys=["loss_total", "loss_rot", "loss_scale", "mAP15", "mAP30"])
+    # not available on ssh
+
+    if enable_csv_datalogging:
+        with open(os.path.join(checkpoint_path, f"{ckpt_name}_training_log.csv"), mode='w', newline='') as csv_file:
+            csv_writer = csv.writer(csv_file)
+            header = ["epoch", "batch", "loss_total", "loss_rot", "loss_scale", "mAP15", "mAP30"]
+            csv_writer.writerow(header)
 
     start_epoch = 0
     if load_ckpt_file is not None:
@@ -20,23 +43,21 @@ def train(model, dataset, checkpoint_path, ckpt_name="model", load_ckpt_file=Non
         print(f"Loading checkpoint from {load_ckpt_file}")
         model.load_state_dict(torch.load(load_ckpt_file, map_location=device))
 
+    batches = 0 # for plotter, logging
+
+
     for epoch in range(start_epoch, epochs):
         model.train()
-        total_loss = 0.0
-        # total_flip_loss = 0.0
-        total_rot_loss = 0.0
-        total_scale_loss = 0.0
-        few_batches_loss_sliding_window = []
-        # few_batches_flip_loss_sliding_window = []
-        few_batches_rot_loss_sliding_window = []
-        few_batches_scale_loss_sliding_window = []
+        # Initialize loss tracking
+        loss_totals = {"loss_total": 0.0, "loss_rot": 0.0, "loss_scale": 0.0, "mAP15": 0.0, "mAP30": 0.0}
+        sliding_windows = {key: [] for key in loss_totals.keys()}
         for batch in tqdm(dataloader, desc=f"Epoch {epoch+1}/{epochs}"):
             images, true_rot, true_scale = [b.to(device) for b in batch]
 
-            rot_pred, scale_pred = model(images)
-        
-            loss_dict = compute_rot_scale_loss(
-                rot_pred, scale_pred,
+            rotation, scale = model(images)
+
+            loss_dict = compute_basic_loss(
+                rotation, scale,
                 true_rot, true_scale
             )
 
@@ -44,36 +65,50 @@ def train(model, dataset, checkpoint_path, ckpt_name="model", load_ckpt_file=Non
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            # Update sliding windows and totals
+            batch_losses = {
+                "loss_total": loss.item(),
+                "loss_rot": loss_dict["loss_rot"].item(),
+                "loss_scale": loss_dict["loss_scale"].item(),
+                "mAP15": loss_dict["mAP15"].item(),
+                "mAP30": loss_dict["mAP30"].item(),
+                # "kappa": loss_dict["kappa"].item(),
+                # "mu": abs(loss_dict["mu"].item())
+            }
 
-            few_batches_loss_sliding_window.append(loss.item())
-            # few_batches_flip_loss_sliding_window.append(loss_dict["loss_flip"].item())
-            few_batches_rot_loss_sliding_window.append(loss_dict["loss_rot"].item())
-            few_batches_scale_loss_sliding_window.append(loss_dict["loss_scale"].item())
 
-            total_loss += loss.item()
-            # total_flip_loss += loss_dict["loss_flip"].item()
-            total_rot_loss += loss_dict["loss_rot"].item()
-            total_scale_loss += loss_dict["loss_scale"].item()
-            avg_few_batch_loss = sum(few_batches_loss_sliding_window) / len(few_batches_loss_sliding_window)
-            # avg_few_batch_flip_loss = sum(few_batches_flip_loss_sliding_window) / len(few_batches_flip_loss_sliding_window)
-            avg_few_batch_rot_loss = sum(few_batches_rot_loss_sliding_window) / len(few_batches_rot_loss_sliding_window)
-            avg_few_batch_scale_loss = sum(few_batches_scale_loss_sliding_window) / len(few_batches_scale_loss_sliding_window)
-            if len(few_batches_loss_sliding_window) >= 5:
-                print(f"Batch Loss Avg (Last 5 Batches): {avg_few_batch_loss:.4f}, "
-                    #   f"Flip Loss Avg: {avg_few_batch_flip_loss:.4f}, "
-                      f"Rot Loss Avg: {avg_few_batch_rot_loss:.4f}, "
-                      f"Scale Loss Avg: {avg_few_batch_scale_loss:.4f}")
-                few_batches_loss_sliding_window.clear()
-                # few_batches_flip_loss_sliding_window.clear()
-                few_batches_rot_loss_sliding_window.clear()
-                few_batches_scale_loss_sliding_window.clear()
+            if enable_csv_datalogging:
+                with open(os.path.join(checkpoint_path, f"{ckpt_name}_training_log.csv"), mode='a', newline='') as csv_file:
+                    csv_writer = csv.writer(csv_file)
+                    row = [epoch+1, batches] + [batch_losses[key] for key in header[2:]]
+                    csv_writer.writerow(row)
 
-        avg_loss = total_loss / len(dataloader)
-        # avg_flip_loss = total_flip_loss / len(dataloader)
-        avg_rot_loss = total_rot_loss / len(dataloader)
-        avg_scale_loss = total_scale_loss / len(dataloader)
-        print(f"Epoch {epoch+1} - Avg Loss: {avg_loss:.4f}, Avg Rot Loss: {avg_rot_loss:.4f}, Avg Scale Loss: {avg_scale_loss:.4f}")
+            # plotter.update(batches, batch_losses)
+            batches += 1
+
+            for key, value in batch_losses.items():
+                sliding_windows[key].append(value)
+                loss_totals[key] += value
+
+            # Print sliding window averages every 5 batches
+            if len(sliding_windows["loss_total"]) >= 5:
+                avg_losses = {key: sum(window) / len(window) for key, window in sliding_windows.items()}
+                keys = [key for key in avg_losses.keys()]
+                print(f"Batch Loss Avg (Last 5 Batches): {', '.join(f'{key}: {avg_losses[key]:.4f}' for key in keys)}")
+                # Clear all sliding windows
+                for window in sliding_windows.values():
+                    window.clear()
+
+        # Calculate and print epoch averages
+        epoch_averages = {key: total / len(dataloader) for key, total in loss_totals.items()}
+        print(f"Epoch {epoch+1} - Avg Loss: {epoch_averages['loss_total']:.4f}, "
+              f"Rot: {epoch_averages['loss_rot']:.4f}, Scale: {epoch_averages['loss_scale']:.4f}, mAP15: {epoch_averages['mAP15']:.4f}, mAP30: {epoch_averages['mAP30']:.4f}")
+            #   f"kappa diff: {epoch_averages['kappa']:.4f}, mu Diff: {epoch_averages['mu']:.4f}")
         torch.save(model.state_dict(), os.path.join(checkpoint_path, f"{ckpt_name}_epoch_{epoch+1}.pt"))
+
+        # Update learning rate scheduler
+        scheduler.step((epoch_averages["mAP30"]+epoch_averages["mAP15"])/2)  
+        # Use avg of mAP15 and mAP30 as metric for scheduler
 
 if __name__ == "__main__":
     import os
@@ -95,6 +130,7 @@ if __name__ == "__main__":
         sys.exit(1)
     if(input("Train or tune? (tune/train): ").strip().lower() == 'tune'):
         load_checkpoint = input("Enter the path to the checkpoint file: ").strip()
-        train(model, dataset, os.path.join(os.path.dirname(__file__), "../../checkpoints"), ckpt_name="tune_noflip", load_ckpt_file=load_checkpoint, epochs=25, batch_size=32, lr=1e-5, device="cuda")
+        train(model, dataset, os.path.join(os.path.dirname(__file__), "../../checkpoints"), ckpt_name="v3_atan_xsquared", load_ckpt_file=load_checkpoint, epochs=25, batch_size=8, lr=1e-5, device="cuda", enable_csv_datalogging=True)
     else:
-        train(model, dataset, os.path.join(os.path.dirname(__file__), "../../checkpoints"), ckpt_name="train_noflip", load_ckpt_file=None, epochs=10, batch_size=32, lr=1e-4, device="cuda")
+        load_checkpoint = input("Enter the path to the checkpoint file (n for skip): ").strip()
+        train(model, dataset, os.path.join(os.path.dirname(__file__), "../../checkpoints"), ckpt_name="v4_atan_xsquared", load_ckpt_file=load_checkpoint if load_checkpoint != "n" else None, epochs=35, batch_size=8, lr=1e-4, device="cuda", enable_csv_datalogging=True)
