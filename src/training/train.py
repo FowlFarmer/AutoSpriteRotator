@@ -25,7 +25,7 @@ def train(model, dataset, checkpoint_path, ckpt_name="model", load_ckpt_file=Non
     patience=3,
     threshold=1e-4,
     threshold_mode='rel',
-    verbose=True
+    verbose=False
     )
     # Initialize live plotter
     # plotter = LiveMetricPlotter(tracked_keys=["loss_total", "loss_rot", "loss_scale", "mAP15", "mAP30"])
@@ -34,7 +34,7 @@ def train(model, dataset, checkpoint_path, ckpt_name="model", load_ckpt_file=Non
     if enable_csv_datalogging:
         with open(os.path.join(checkpoint_path, f"{ckpt_name}_training_log.csv"), mode='w', newline='') as csv_file:
             csv_writer = csv.writer(csv_file)
-            header = ["epoch", "batch", "loss_total", "loss_rot", "loss_scale", "mAP15", "mAP30"]
+            header = ["epoch", "batch", "learning_rate", "loss_total", "loss_rot", "loss_scale", "mAP15", "mAP30"]
             csv_writer.writerow(header)
 
     start_epoch = 0
@@ -44,7 +44,8 @@ def train(model, dataset, checkpoint_path, ckpt_name="model", load_ckpt_file=Non
         model.load_state_dict(torch.load(load_ckpt_file, map_location=device))
 
     batches = 0 # for plotter, logging
-
+    learning_rate = float(scheduler.get_last_lr()[0])  # this returns a list for some reason
+    print(f"Initial learning rate: {learning_rate}")
 
     for epoch in range(start_epoch, epochs):
         model.train()
@@ -80,7 +81,7 @@ def train(model, dataset, checkpoint_path, ckpt_name="model", load_ckpt_file=Non
             if enable_csv_datalogging:
                 with open(os.path.join(checkpoint_path, f"{ckpt_name}_training_log.csv"), mode='a', newline='') as csv_file:
                     csv_writer = csv.writer(csv_file)
-                    row = [epoch+1, batches] + [batch_losses[key] for key in header[2:]]
+                    row = [epoch+1, batches, learning_rate] + [batch_losses[key] for key in header[3:]]
                     csv_writer.writerow(row)
 
             # plotter.update(batches, batch_losses)
@@ -107,7 +108,9 @@ def train(model, dataset, checkpoint_path, ckpt_name="model", load_ckpt_file=Non
         torch.save(model.state_dict(), os.path.join(checkpoint_path, f"{ckpt_name}_epoch_{epoch+1}.pt"))
 
         # Update learning rate scheduler
-        scheduler.step((epoch_averages["mAP30"]+epoch_averages["mAP15"])/2)  
+        scheduler.step((epoch_averages["mAP30"]+epoch_averages["mAP15"])/2)
+        learning_rate = scheduler.get_last_lr()[0] # Get the current learning rate
+        print(f"Learning rate: {learning_rate}")  # Get the current learning rate
         # Use avg of mAP15 and mAP30 as metric for scheduler
 
 if __name__ == "__main__":
