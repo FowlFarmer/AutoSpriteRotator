@@ -50,7 +50,7 @@ class TransformLabelDataset(Dataset):
 
         return (
             img,  # shape [4, H, W]
-            torch.tensor([label["flip"]], dtype=torch.float32),
+            # torch.tensor([label["flip"]], dtype=torch.float32),
             torch.tensor([label["rot"]], dtype=torch.float32),
             torch.tensor([label["scale"]], dtype=torch.float32),
         )
