@@ -70,8 +70,8 @@ loss = torch.mean(-torch.cos(angle_diff) + 1)
 **Adjustment for Loss Scale:**  
 The absolute magnitude of a loss affects its effective learning rate. To compare fairly, I computed the definite integrals within [-π, π]:
 
-∫[-π, π] arctan(x²) dx ≈ 6.06291
-∫[-π, π] (1 − cos x) dx = 2π
+- ∫[-π, π] arctan(x²) dx ≈ 6.06291
+- ∫[-π, π] (1 − cos x) dx = 2π
 
 By multiplying the cosine-based loss by 6.06291/2π, the average loss magnitude matches that of the arctan-squared loss, reducing effective learning rate discrepancies.
 
