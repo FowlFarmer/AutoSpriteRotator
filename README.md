@@ -42,31 +42,52 @@ This led to the model learning to hedge its predictions, especially when the rot
 
 ## Loss Function Experiments
 
-### 1. Arctangent Squared Loss
+### 1. Arctangent-Squared Loss
 
 Implemented the following custom loss:
+
 ```python
 angle_diff = angle_difference(pred, target)  # wrapped to [-π, π]
 loss = torch.mean(torch.atan(angle_diff ** 2))
 ```
 
-This loss has the following desirable properties:
-- Increases with error (say 90 degrees), but with flattening gradients for large errors (180 degrees)
-- The highest slope is reached close to 90 degrees to allow the model to initally learn the general silhouette and then distinguish between handle and blade
-- Discourages midpoint averaging in multimodal targets
-- Yields stable convergence in training
+**Properties:**
+- Increases with error (e.g., 90°), but gradients flatten for large errors (e.g., 180°).
+- Highest slope occurs near 90°, helping the model first learn the general silhouette, then fine-tune distinctions (e.g., handle vs. blade).
+- Discourages midpoint averaging in multimodal targets.
+- Produces stable convergence in training.
+
+---
 
 ### 2. Cosine-Based Loss
 
-Also evaluated the loss:
+Also evaluated:
+
 ```python
+angle_diff = angle_difference(pred, target)  # wrapped to [-π, π]
 loss = torch.mean(-torch.cos(angle_diff) + 1)
 ```
 
-This loss also has the highest slope at 90 degrees.
-- I have no idea as to the specifics of why one of these two similar functions would work better here
-- experimentally, this leaded to slightly slower convergence than arctan(x^2)
-- Because I took the angle error as the lowest signed integer, there is no effect in the fact this function has periodicity.
+**Adjustment for Loss Scale:**  
+The absolute magnitude of a loss affects its effective learning rate. To compare fairly, I computed the definite integrals from \(-\pi\) to \(\pi\):
+
+\[
+\int_{-\pi}^{\pi} \arctan(x^2) \, dx \ \approx \ \mathbf{6.06291}
+\]
+\[
+\int_{-\pi}^{\pi} (1 - \cos x) \, dx = \mathbf{2\pi}
+\]
+
+By multiplying the cosine-based loss by \(\frac{6.06291}{2\pi}\), the average loss magnitude matches that of the arctan-squared loss, reducing effective learning rate discrepancies.
+
+> **Note:** \(\arctan(x^2)\) has no elementary closed-form integral, so the value was computed numerically via Wolfram Alpha.
+
+---
+
+**Additional Notes:**
+- The \(1 - \cos x\) loss also peaks in slope at 90°.
+- In experiments, it converged slightly slower than the arctan-squared loss.
+- Since angle error is taken as the minimal signed value, the periodicity of the cosine function does not introduce issues.
 
 ### Additional Methods Explored
 

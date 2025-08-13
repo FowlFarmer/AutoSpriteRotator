@@ -133,7 +133,7 @@ if __name__ == "__main__":
         sys.exit(1)
     if(input("Train or tune? (tune/train): ").strip().lower() == 'tune'):
         load_checkpoint = input("Enter the path to the checkpoint file: ").strip()
-        train(model, dataset, os.path.join(os.path.dirname(__file__), "../../checkpoints"), ckpt_name="v5_cosx", load_ckpt_file=load_checkpoint, epochs=25, batch_size=8, lr=1e-5, device="cuda", enable_csv_datalogging=True)
+        train(model, dataset, os.path.join(os.path.dirname(__file__), "../../checkpoints"), ckpt_name="v6_cosx", load_ckpt_file=load_checkpoint, epochs=25, batch_size=8, lr=1e-5, device="cuda", enable_csv_datalogging=True)
     else:
         load_checkpoint = input("Enter the path to the checkpoint file (n for skip): ").strip()
-        train(model, dataset, os.path.join(os.path.dirname(__file__), "../../checkpoints"), ckpt_name="v5_cosx", load_ckpt_file=load_checkpoint if load_checkpoint != "n" else None, epochs=35, batch_size=8, lr=1e-4, device="cuda", enable_csv_datalogging=True)
+        train(model, dataset, os.path.join(os.path.dirname(__file__), "../../checkpoints"), ckpt_name="v6_cosx", load_ckpt_file=load_checkpoint if load_checkpoint != "n" else None, epochs=35, batch_size=8, lr=1e-4, device="cuda", enable_csv_datalogging=True)

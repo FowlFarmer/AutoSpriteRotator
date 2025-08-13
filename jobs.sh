@@ -42,7 +42,7 @@ build_venv() {
     echo "Virtual environment build completed successfully!"
 }
 
-Training job
+# Training job
 build_venv
 python /home/fowlfarmer/AutoSpriteTransform/src/training/train.py << EOF
 train

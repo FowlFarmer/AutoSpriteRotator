@@ -236,7 +236,7 @@ def compute_cos_loss(
 
     # --- Rotation loss ---
     angle_diff = angle_difference(rot_pred, true_rot)  # shape [B, 1]
-    loss_rot = torch.mean(1-torch.cos(angle_diff))   # cos(x) loss, check readme for explanation
+    loss_rot = torch.mean(0.96494 * (1-torch.cos(angle_diff)))   # cos(x) loss, check readme for explanation
 
     # Total loss (feel free to tune these weights)
     total_loss = loss_rot + loss_scale
