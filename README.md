@@ -1,6 +1,5 @@
 # AutoSpriteRotator
-Will elaborate later, training and model infrastructure for a super niche model that automatically takes your sprites and rotates scales and flips them
-
+Training and model infrastructure for a super niche model that automatically takes your sprites and rotates and scales them
 - Note that the training dataset contains transparent images where RGB values are 0 for all points that have an alpha value of 0. This means that you must add a preprocessing step to emulate this before running inference, else the hidden values behind the transparency, which inevitably are still in the tensor, may screw up the model's predictions.
 
 
@@ -69,23 +68,19 @@ loss = torch.mean(-torch.cos(angle_diff) + 1)
 ```
 
 **Adjustment for Loss Scale:**  
-The absolute magnitude of a loss affects its effective learning rate. To compare fairly, I computed the definite integrals from \(-\pi\) to \(\pi\):
+The absolute magnitude of a loss affects its effective learning rate. To compare fairly, I computed the definite integrals within [-π, π]:
 
-\[
-\int_{-\pi}^{\pi} \arctan(x^2) \, dx \ \approx \ \mathbf{6.06291}
-\]
-\[
-\int_{-\pi}^{\pi} (1 - \cos x) \, dx = \mathbf{2\pi}
-\]
+∫[-π, π] arctan(x²) dx ≈ 6.06291
+∫[-π, π] (1 − cos x) dx = 2π
 
-By multiplying the cosine-based loss by \(\frac{6.06291}{2\pi}\), the average loss magnitude matches that of the arctan-squared loss, reducing effective learning rate discrepancies.
+By multiplying the cosine-based loss by 6.06291/2π, the average loss magnitude matches that of the arctan-squared loss, reducing effective learning rate discrepancies.
 
-> **Note:** \(\arctan(x^2)\) has no elementary closed-form integral, so the value was computed numerically via Wolfram Alpha.
+> **Note:** arctan(x²) has no elementary closed-form integral, so the value was computed numerically via Wolfram Alpha.
 
 ---
 
 **Additional Notes:**
-- The \(1 - \cos x\) loss also peaks in slope at 90°.
+- The 1 - cos(x) loss also peaks in slope at 90°.
 - In experiments, it converged slightly slower than the arctan-squared loss.
 - Since angle error is taken as the minimal signed value, the periodicity of the cosine function does not introduce issues.
 
