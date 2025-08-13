@@ -11,7 +11,7 @@ import csv
 
 from dataset import TransformLabelDataset
 from arch_classic import AutoSpriteTransformModel
-from losses import compute_flip_rot_scale_loss, compute_rot_scale_loss, this_somehow_works, von_mises_nll, compute_basic_loss
+from losses import compute_flip_rot_scale_loss, compute_rot_scale_loss, this_somehow_works, von_mises_nll, compute_basic_loss, compute_cos_loss
 # from visualizer import LiveMetricPlotter
 
 def train(model, dataset, checkpoint_path, ckpt_name="model", load_ckpt_file=None, epochs=10, batch_size=16, lr=1e-4, device="cuda", enable_csv_datalogging = False):
@@ -57,7 +57,7 @@ def train(model, dataset, checkpoint_path, ckpt_name="model", load_ckpt_file=Non
 
             rotation, scale = model(images)
 
-            loss_dict = compute_basic_loss(
+            loss_dict = compute_cos_loss(
                 rotation, scale,
                 true_rot, true_scale
             )
@@ -133,7 +133,7 @@ if __name__ == "__main__":
         sys.exit(1)
     if(input("Train or tune? (tune/train): ").strip().lower() == 'tune'):
         load_checkpoint = input("Enter the path to the checkpoint file: ").strip()
-        train(model, dataset, os.path.join(os.path.dirname(__file__), "../../checkpoints"), ckpt_name="v3_atan_xsquared", load_ckpt_file=load_checkpoint, epochs=25, batch_size=8, lr=1e-5, device="cuda", enable_csv_datalogging=True)
+        train(model, dataset, os.path.join(os.path.dirname(__file__), "../../checkpoints"), ckpt_name="v5_cosx", load_ckpt_file=load_checkpoint, epochs=25, batch_size=8, lr=1e-5, device="cuda", enable_csv_datalogging=True)
     else:
         load_checkpoint = input("Enter the path to the checkpoint file (n for skip): ").strip()
-        train(model, dataset, os.path.join(os.path.dirname(__file__), "../../checkpoints"), ckpt_name="v4_atan_xsquared", load_ckpt_file=load_checkpoint if load_checkpoint != "n" else None, epochs=35, batch_size=8, lr=1e-4, device="cuda", enable_csv_datalogging=True)
+        train(model, dataset, os.path.join(os.path.dirname(__file__), "../../checkpoints"), ckpt_name="v5_cosx", load_ckpt_file=load_checkpoint if load_checkpoint != "n" else None, epochs=35, batch_size=8, lr=1e-4, device="cuda", enable_csv_datalogging=True)

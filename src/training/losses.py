@@ -221,3 +221,32 @@ def compute_basic_loss(
         "mAP15": compute_accuracy_within_threshold(rot_pred, true_rot, 15.0),  # Mean Average Precision at 15 degrees
         "mAP30": compute_accuracy_within_threshold(rot_pred, true_rot, 30.0)  # Mean Average Precision at 30 degrees
     }
+
+def compute_cos_loss(
+    # flip_logit: torch.Tensor,     # shape [B, 1]
+    rot_pred: torch.Tensor,       # shape [B, 1]
+    scale_pred: torch.Tensor,     # shape [B, 1]
+    # true_flip: torch.Tensor,      # shape [B, 1], values 0.0 or 1.0
+    true_rot: torch.Tensor,       # shape [B, 1], radians
+    true_scale: torch.Tensor      # shape [B, 1], float
+) -> dict:
+
+    # --- Scale loss ---
+    loss_scale = F.mse_loss(scale_pred, true_scale)
+
+    # --- Rotation loss ---
+    angle_diff = angle_difference(rot_pred, true_rot)  # shape [B, 1]
+    loss_rot = torch.mean(1-torch.cos(angle_diff))   # cos(x) loss, check readme for explanation
+
+    # Total loss (feel free to tune these weights)
+    total_loss = loss_rot + loss_scale
+
+    return {
+        "loss_total": total_loss,
+        # "loss_flip": loss_flip,
+        "loss_rot": loss_rot,
+        "loss_scale": loss_scale,
+        "mAP15": compute_accuracy_within_threshold(rot_pred, true_rot, 15.0),  # Mean Average Precision at 15 degrees
+        "mAP30": compute_accuracy_within_threshold(rot_pred, true_rot, 30.0)  # Mean Average Precision at 30 degrees
+    }
+

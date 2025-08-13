@@ -1,5 +1,9 @@
 #!/bin/bash
-
+#SBATCH --job-name=AutoSpriteTransform
+#SBATCH --cpus-per-task=32
+#SBATCH --mem=32G
+#SBATCH --gres shard:24564,tmpdisk:65536
+#SBATCH --time=10:00:00
 
 # quick setup for imaginecraft model build venv
 
@@ -33,7 +37,16 @@ build_venv() {
     sleep 1
 
     # Prompt hf login
-    huggingface-cli login
+    # huggingface-cli login
 
     echo "Virtual environment build completed successfully!"
 }
+
+Training job
+build_venv
+python /home/fowlfarmer/AutoSpriteTransform/src/training/train.py << EOF
+train
+n
+EOF
+
+# python /home/fowlfarmer/AutoSpriteTransform/src/dataset_generation/pre_labelling.py
