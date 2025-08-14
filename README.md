@@ -83,8 +83,15 @@ By multiplying the cosine-based loss by 6.06291/2π, the average loss magnitude 
 
 **Additional Notes:**
 - The 1 - cos(x) loss also peaks in slope at 90°.
-- In experiments, it converged slightly slower than the arctan-squared loss.
 - Since angle error is taken as the minimal signed value, the periodicity of the cosine function does not introduce issues.
+
+### Results
+![Results for 1-cosx loss](datasets/results_cos.png)
+![Results for arctan(x^2) loss](datasets/results_arctanxsquared.png)
+
+- The first diagram depicts loss over batch# (taking averages every 400 batches) for 19494 batches over 35 epochs.
+- In experiments, as shown, the arctan(x^2) loss function converges slower than the 1-cosx loss function for mAP@30 and 15.
+- I'm not sure of the usefulness of the third grey line for decrease in loss over time, as that is more unique to the specific loss function itself rather than actionable results.
 
 ### Additional Methods Explored
 
