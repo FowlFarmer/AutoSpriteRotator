@@ -1,4 +1,4 @@
-# AutoSpriteRotator
+# AutoSpriteTransform
 Training and model infrastructure for a super niche model that automatically takes your sprites and rotates and scales them
 - Note that the training dataset contains transparent images where RGB values are 0 for all points that have an alpha value of 0. This means that you must add a preprocessing step to emulate this before running inference, else the hidden values behind the transparency, which inevitably are still in the tensor, may screw up the model's predictions.
 
@@ -11,6 +11,8 @@ Training and model infrastructure for a super niche model that automatically tak
 This model was built to serve a very niche purpose I had: I'm making a Minecraft mod in which you can basically just beg god for whatever items you want, and they'd arrive to your hand like magic complete with custom interactions and textures. Basically, there's a complex backend system that would handle java script code and item logic functionality and then inject them into your game along with custom textures. However, image generation models aren't easily able to generate weapon sprites in specific orientations. In hindsight, I could've fine-tuned Stable Diffusion XL to do this a lot faster but hey, I learned a lot about model architecture, model training and losses, torch implementation and different ML methods.
 
 This document summarizes the challenges encountered and methods explored while training a model to predict rotation angles, particularly in the presence of symmetry and ambiguous cases. The goal was to achieve stable, accurate predictions while avoiding mode-averaging behavior common with standard loss functions.
+
+- Experimentally, scale factor was very fast to converge using simple MSE loss with a simple fully connected head. This document will mostly focus on challenges with rotation.
 
 ## Datasets
 
